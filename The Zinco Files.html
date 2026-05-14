@@ -1,0 +1,1262 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Zinco Files</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090908;
+      --paper: #15140f;
+      --paper-2: #1d1a13;
+      --ink: #eee7d1;
+      --muted: #a39b86;
+      --line: rgba(238, 231, 209, .16);
+      --line-strong: rgba(238, 231, 209, .28);
+      --red: #ba1f22;
+      --red-hot: #ef3437;
+      --black: #030303;
+      --green: #88a071;
+      --amber: #d5aa45;
+      --shadow: 0 24px 80px rgba(0, 0, 0, .55);
+      --mono: "Courier New", Courier, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      min-height: 100%;
+      background:
+        radial-gradient(circle at 20% 0%, rgba(186, 31, 34, .16), transparent 34rem),
+        radial-gradient(circle at 78% 18%, rgba(213, 170, 69, .09), transparent 30rem),
+        linear-gradient(135deg, #080807 0%, #11100d 52%, #050505 100%);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: var(--mono);
+      overflow-x: hidden;
+      background:
+        repeating-linear-gradient(0deg, rgba(255,255,255,.026) 0 1px, transparent 1px 4px),
+        linear-gradient(90deg, rgba(0,0,0,.45), transparent 18%, transparent 82%, rgba(0,0,0,.55));
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+      opacity: .42;
+      background:
+        radial-gradient(circle at center, transparent 48%, rgba(0,0,0,.55) 100%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.015) 0 1px, transparent 1px 3px);
+      mix-blend-mode: multiply;
+    }
+
+    button, input, textarea, select {
+      font: inherit;
+    }
+
+    button {
+      color: var(--ink);
+      background: transparent;
+      border: 1px solid var(--line-strong);
+      cursor: pointer;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease, color .18s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(239, 52, 55, .55);
+      background: rgba(186, 31, 34, .11);
+    }
+
+    button:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .app-shell {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      padding: 28px clamp(16px, 4vw, 52px) 56px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: start;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 24px;
+      position: relative;
+    }
+
+    .case-label {
+      display: inline-grid;
+      grid-auto-flow: column;
+      align-items: center;
+      gap: 9px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .case-label::before {
+      content: "";
+      width: 42px;
+      height: 1px;
+      background: var(--red);
+      box-shadow: 0 0 18px rgba(239, 52, 55, .8);
+    }
+
+    h1 {
+      margin: 12px 0 10px;
+      font-size: clamp(42px, 9vw, 118px);
+      line-height: .82;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      text-shadow: 0 0 34px rgba(186, 31, 34, .26);
+    }
+
+    .subtitle {
+      margin: 0;
+      max-width: 820px;
+      color: #cfc6ad;
+      font-family: var(--sans);
+      font-size: clamp(15px, 2vw, 19px);
+      line-height: 1.55;
+    }
+
+    .stamp {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 174px;
+      min-height: 74px;
+      color: var(--red-hot);
+      border: 4px double currentColor;
+      transform: rotate(8deg);
+      text-transform: uppercase;
+      font-weight: 900;
+      letter-spacing: .1em;
+      font-size: 18px;
+      opacity: .84;
+      filter: drop-shadow(0 0 18px rgba(186,31,34,.2));
+      mix-blend-mode: screen;
+    }
+
+    .lock-trigger {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 11;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(8, 8, 7, .68);
+      color: rgba(238, 231, 209, .48);
+      display: grid;
+      place-items: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .lock-trigger:hover { color: var(--ink); }
+
+    .toolbar {
+      margin: 28px 0 22px;
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) auto auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .field {
+      position: relative;
+    }
+
+    .field input, .field textarea, .field select {
+      width: 100%;
+      color: var(--ink);
+      background: rgba(5, 5, 4, .52);
+      border: 1px solid var(--line);
+      outline: none;
+      padding: 13px 14px;
+      border-radius: 2px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.45);
+      transition: border-color .18s ease, background .18s ease;
+    }
+
+    .field textarea {
+      min-height: 104px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .field input:focus, .field textarea:focus, .field select:focus {
+      border-color: rgba(239, 52, 55, .65);
+      background: rgba(18, 15, 12, .85);
+    }
+
+    .toolbar button, .admin-actions button, .form-actions button, .danger-zone button {
+      min-height: 44px;
+      padding: 0 14px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-size: 12px;
+    }
+
+    .dossier-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 22px;
+    }
+
+    .file-card {
+      position: relative;
+      min-height: 520px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.035), transparent 28%),
+        var(--paper);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      isolation: isolate;
+      animation: liftIn .7s ease both;
+    }
+
+    .file-card::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border: 1px solid rgba(238, 231, 209, .08);
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .file-card::after {
+      content: attr(data-level);
+      position: absolute;
+      right: -34px;
+      top: 22px;
+      padding: 8px 44px;
+      transform: rotate(29deg);
+      border: 2px solid rgba(239, 52, 55, .75);
+      color: rgba(239, 52, 55, .8);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      z-index: 4;
+    }
+
+    .file-image {
+      height: 245px;
+      position: relative;
+      background: #050505;
+      overflow: hidden;
+    }
+
+    .file-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: grayscale(.78) contrast(1.22) sepia(.16);
+      transform: scale(1.01);
+      transition: transform .6s ease, filter .6s ease;
+    }
+
+    .file-card:hover .file-image img {
+      transform: scale(1.07);
+      filter: grayscale(.42) contrast(1.28) sepia(.1);
+    }
+
+    .file-image::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(transparent 0 38%, rgba(0,0,0,.16) 39% 41%, transparent 42% 100%),
+        repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px 5px);
+      mix-blend-mode: overlay;
+    }
+
+    .file-body {
+      padding: 22px;
+    }
+
+    .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .redacted-title {
+      margin: 0 0 13px;
+      font-size: 23px;
+      line-height: 1.1;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .redacted-title .bar {
+      display: inline-block;
+      height: .82em;
+      width: clamp(42px, 24%, 94px);
+      background: var(--black);
+      border: 1px solid rgba(238,231,209,.07);
+      vertical-align: -.08em;
+      margin: 0 6px;
+      box-shadow: 0 0 0 1px rgba(0,0,0,.75);
+    }
+
+    .description {
+      margin: 0;
+      color: #d4ccb6;
+      font-family: var(--sans);
+      line-height: 1.58;
+      font-size: 15px;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 18px;
+    }
+
+    .tag {
+      border: 1px solid rgba(213, 170, 69, .25);
+      color: #d5c082;
+      background: rgba(213, 170, 69, .06);
+      padding: 5px 8px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .empty-state {
+      border: 1px dashed var(--line-strong);
+      padding: 42px;
+      text-align: center;
+      color: var(--muted);
+      background: rgba(255,255,255,.03);
+      font-family: var(--sans);
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      background: rgba(0,0,0,.72);
+      backdrop-filter: blur(12px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+      animation: fadeIn .2s ease both;
+    }
+
+    .modal {
+      width: min(1120px, 100%);
+      max-height: min(880px, calc(100vh - 32px));
+      overflow: auto;
+      background:
+        linear-gradient(135deg, rgba(186,31,34,.11), transparent 36%),
+        var(--paper-2);
+      border: 1px solid var(--line-strong);
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+
+    .modal-header {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: rgba(21, 20, 15, .94);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 20px;
+    }
+
+    .modal-title {
+      margin: 0;
+      font-size: 18px;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+    }
+
+    .close-button {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+    }
+
+    .modal-content {
+      padding: 22px;
+    }
+
+    .auth-panel {
+      max-width: 520px;
+      margin: 0 auto;
+      display: grid;
+      gap: 14px;
+    }
+
+    .auth-note, .status-line {
+      color: var(--muted);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .status-line.good { color: var(--green); }
+    .status-line.bad { color: #ff7b7d; }
+
+    .admin-grid {
+      display: grid;
+      grid-template-columns: minmax(280px, 440px) 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.2);
+      padding: 18px;
+    }
+
+    .panel h3 {
+      margin: 0 0 15px;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: #d7cfb9;
+    }
+
+    .form-stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .image-preview {
+      min-height: 170px;
+      border: 1px dashed var(--line-strong);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background: rgba(0,0,0,.32);
+      color: var(--muted);
+      text-align: center;
+      padding: 12px;
+    }
+
+    .image-preview img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+    }
+
+    .form-actions, .admin-actions, .danger-zone {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .primary {
+      background: rgba(186,31,34,.22);
+      border-color: rgba(239,52,55,.58);
+    }
+
+    .danger {
+      color: #ff898b;
+      border-color: rgba(239, 52, 55, .42);
+    }
+
+    .file-list {
+      display: grid;
+      gap: 10px;
+      max-height: 628px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .admin-item {
+      display: grid;
+      grid-template-columns: 72px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.025);
+      padding: 10px;
+    }
+
+    .admin-item img {
+      width: 72px;
+      height: 54px;
+      object-fit: cover;
+      filter: grayscale(.6) contrast(1.1);
+    }
+
+    .admin-item strong {
+      display: block;
+      font-size: 14px;
+      text-transform: uppercase;
+    }
+
+    .admin-item span {
+      display: block;
+      color: var(--muted);
+      font-family: var(--sans);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .admin-item-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .admin-item-actions button {
+      width: 38px;
+      height: 34px;
+      padding: 0;
+    }
+
+    .hidden { display: none !important; }
+
+    @keyframes liftIn {
+      from { opacity: 0; transform: translateY(18px) rotate(.4deg); }
+      to { opacity: 1; transform: translateY(0) rotate(0); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @media (max-width: 820px) {
+      .topbar, .toolbar, .admin-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stamp {
+        justify-self: start;
+        transform: rotate(-5deg);
+      }
+
+      .file-card {
+        min-height: auto;
+      }
+
+      .modal-content {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <div class="case-label">Case index / local archive</div>
+        <h1 id="siteTitle">The Zinco Files</h1>
+      </div>
+      <div class="stamp" aria-label="Classified stamp">Classified</div>
+    </header>
+
+    <section class="toolbar" aria-label="Dossier filters">
+      <label class="field">
+        <input id="searchInput" type="search" placeholder="Search files, descriptions, tags...">
+      </label>
+      <label class="field">
+        <select id="tagFilter" aria-label="Filter by tag">
+          <option value="">All tags</option>
+        </select>
+      </label>
+      <button id="sortToggle" type="button" title="Toggle sort order">Newest first</button>
+    </section>
+
+    <section id="fileGrid" class="dossier-grid" aria-live="polite"></section>
+  </main>
+
+  <button id="lockTrigger" class="lock-trigger" type="button" aria-label="Open admin panel" title="Admin access">LOCK</button>
+
+  <div id="adminModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
+    <section class="modal">
+      <header class="modal-header">
+        <h2 id="adminTitle" class="modal-title">Restricted Administration</h2>
+        <button id="closeModal" class="close-button" type="button" aria-label="Close admin panel">x</button>
+      </header>
+      <div class="modal-content">
+        <section id="authView" class="auth-panel">
+          <p id="authIntro" class="auth-note"></p>
+          <label id="passwordField" class="field">
+            <input id="passwordInput" type="password" autocomplete="current-password" placeholder="Password">
+          </label>
+          <label id="confirmField" class="field hidden">
+            <input id="confirmPasswordInput" type="password" autocomplete="new-password" placeholder="Confirm password">
+          </label>
+          <label id="recoveryField" class="field hidden">
+            <input id="recoveryInput" type="password" autocomplete="one-time-code" placeholder="Recovery key">
+          </label>
+          <div class="form-actions">
+            <button id="loginButton" class="primary" type="button">Authenticate</button>
+            <button id="forgotButton" type="button">Forgot password</button>
+          </div>
+          <p id="authStatus" class="status-line"></p>
+        </section>
+
+        <section id="adminView" class="hidden">
+          <div class="admin-actions" style="margin-bottom: 16px;">
+            <button id="exportButton" type="button">Export JSON</button>
+            <button id="importButton" type="button">Import JSON</button>
+            <input id="importInput" class="hidden" type="file" accept="application/json,.json">
+            <button id="logoutButton" type="button">End session</button>
+          </div>
+
+          <div class="admin-grid">
+            <form id="fileForm" class="panel">
+              <h3 id="formTitle">Add file entry</h3>
+              <div class="form-stack">
+                <label class="field">
+                  <input id="entryTitle" required maxlength="120" placeholder="Redacted title">
+                </label>
+                <label class="field">
+                  <textarea id="entryDescription" required maxlength="900" placeholder="Description"></textarea>
+                </label>
+                <label class="field">
+                  <input id="entryTags" placeholder="Tags, comma-separated">
+                </label>
+                <label class="field">
+                  <input id="entryImageUrl" placeholder="Image URL or data URL">
+                </label>
+                <label class="field">
+                  <input id="entryUpload" type="file" accept="image/*">
+                </label>
+                <label class="field">
+                  <select id="entryLevel" aria-label="Redaction level">
+                    <option value="Low redaction">Low redaction</option>
+                    <option value="Partial redaction">Partial redaction</option>
+                    <option value="Heavy redaction">Heavy redaction</option>
+                    <option value="Eyes only">Eyes only</option>
+                  </select>
+                </label>
+                <div id="imagePreview" class="image-preview">Image preview</div>
+                <div class="form-actions">
+                  <button class="primary" type="submit">Save entry</button>
+                  <button id="resetForm" type="button">Clear</button>
+                </div>
+                <p id="adminStatus" class="status-line"></p>
+              </div>
+            </form>
+
+            <section class="panel">
+              <h3>Local files store</h3>
+              <div id="adminFileList" class="file-list"></div>
+            </section>
+          </div>
+        </section>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const DB_NAME = "zinco-files-db";
+      const DB_VERSION = 1;
+      const SESSION_MS = 30 * 60 * 1000;
+      const DEFAULT_RECOVERY_KEY = "ZINCO-RESET-1977";
+      const FILE_STORE = "files";
+      const SETTINGS_STORE = "settings";
+      const SETTINGS_ID = "config";
+
+      const $ = (id) => document.getElementById(id);
+
+      const state = {
+        files: [],
+        settings: null,
+        sortNewest: true,
+        search: "",
+        tag: "",
+        editingId: null,
+        imageData: "",
+        imageType: "url",
+        authMode: "login",
+        dbReady: null
+      };
+
+      const sampleImages = [
+        "data:image/svg+xml;charset=utf-8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="900" height="620" viewBox="0 0 900 620"><defs><filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="3"/><feColorMatrix type="saturate" values="0"/></filter></defs><rect width="900" height="620" fill="#12100c"/><rect x="84" y="54" width="670" height="496" fill="#d8ceb1" opacity=".88" transform="rotate(-3 419 302)"/><rect x="118" y="98" width="420" height="20" fill="#080807"/><rect x="118" y="146" width="590" height="13" fill="#191710" opacity=".55"/><rect x="118" y="180" width="470" height="13" fill="#191710" opacity=".55"/><rect x="118" y="214" width="540" height="13" fill="#191710" opacity=".55"/><rect x="144" y="306" width="380" height="32" fill="#050505"/><rect x="142" y="366" width="475" height="32" fill="#050505"/><circle cx="675" cy="430" r="86" fill="none" stroke="#a11619" stroke-width="14" opacity=".72"/><text x="612" y="439" fill="#a11619" font-family="monospace" font-size="28" font-weight="900" transform="rotate(-12 675 430)">SEALED</text><rect width="900" height="620" filter="url(#n)" opacity=".12"/></svg>'),
+        "data:image/svg+xml;charset=utf-8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="900" height="620" viewBox="0 0 900 620"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#282215"/><stop offset="1" stop-color="#050505"/></linearGradient></defs><rect width="900" height="620" fill="url(#g)"/><path d="M76 482 C184 328 234 172 382 190 C520 206 556 358 710 126" fill="none" stroke="#d4c392" stroke-width="3" opacity=".38"/><path d="M118 446 C242 394 344 432 468 338 C584 250 656 300 784 220" fill="none" stroke="#a11619" stroke-width="6" opacity=".55"/><g fill="#d4c392" opacity=".75"><circle cx="178" cy="430" r="9"/><circle cx="386" cy="190" r="9"/><circle cx="468" cy="338" r="9"/><circle cx="710" cy="126" r="9"/><circle cx="784" cy="220" r="9"/></g><g fill="#050505"><rect x="128" y="86" width="230" height="28"/><rect x="590" y="448" width="184" height="28"/><rect x="294" y="500" width="318" height="18"/></g><text x="94" y="562" fill="#b3a98d" font-family="monospace" font-size="24">ROUTE ANALYSIS / UNCORROBORATED</text></svg>'),
+        "data:image/svg+xml;charset=utf-8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="900" height="620" viewBox="0 0 900 620"><rect width="900" height="620" fill="#0c0c0b"/><rect x="126" y="58" width="648" height="504" rx="4" fill="#d6ccb0" opacity=".82"/><rect x="178" y="108" width="236" height="260" fill="#191712"/><path d="M206 338 C226 284 252 232 300 232 C350 232 374 284 392 338" fill="#4c4738"/><circle cx="302" cy="184" r="54" fill="#4c4738"/><rect x="462" y="118" width="220" height="18" fill="#090908"/><rect x="462" y="166" width="182" height="12" fill="#2c291f"/><rect x="462" y="200" width="236" height="12" fill="#2c291f"/><rect x="462" y="234" width="166" height="12" fill="#2c291f"/><rect x="462" y="304" width="262" height="30" fill="#090908"/><rect x="462" y="372" width="194" height="30" fill="#090908"/><text x="180" y="464" fill="#a11619" font-family="monospace" font-size="54" font-weight="900" transform="rotate(-8 180 464)">SOURCE</text><text x="180" y="520" fill="#a11619" font-family="monospace" font-size="54" font-weight="900" transform="rotate(-8 180 520)">WITHHELD</text></svg>')
+      ];
+
+      const seedFiles = [
+        {
+          title: "Transit Ledger [REDACTED]",
+          description: "Scanned memorandum from a locked evidence appendix. Marginal notes indicate conflicting movement logs and a missing courier signature.",
+          tags: ["ledger", "movement", "sealed"],
+          imageData: sampleImages[0],
+          imageType: "data-url",
+          redactionLevel: "Heavy redaction"
+        },
+        {
+          title: "Island Route Overlay",
+          description: "An annotated route sketch with three unverified transfer points. The original caption was struck before public release.",
+          tags: ["routes", "map", "analysis"],
+          imageData: sampleImages[1],
+          imageType: "data-url",
+          redactionLevel: "Partial redaction"
+        },
+        {
+          title: "Witness Intake Form",
+          description: "A damaged intake cover sheet, partially reconstructed from a photographic exhibit. Personal identifiers remain obscured.",
+          tags: ["witness", "intake", "source"],
+          imageData: sampleImages[2],
+          imageType: "data-url",
+          redactionLevel: "Eyes only"
+        }
+      ];
+
+      const requestToPromise = (request) => new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+
+      const openDatabase = () => new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = () => {
+          const database = request.result;
+          if (!database.objectStoreNames.contains(FILE_STORE)) {
+            const files = database.createObjectStore(FILE_STORE, { keyPath: "id", autoIncrement: true });
+            files.createIndex("dateAdded", "dateAdded", { unique: false });
+            files.createIndex("tags", "tags", { unique: false, multiEntry: true });
+          }
+          if (!database.objectStoreNames.contains(SETTINGS_STORE)) {
+            database.createObjectStore(SETTINGS_STORE, { keyPath: "id" });
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+
+      const db = {
+        connection: null,
+        async init() {
+          this.connection = await openDatabase();
+          return this.connection;
+        },
+        store(name, mode = "readonly") {
+          return this.connection.transaction(name, mode).objectStore(name);
+        },
+        async get(storeName, key) {
+          return requestToPromise(this.store(storeName).get(key));
+        },
+        async getAll(storeName) {
+          return requestToPromise(this.store(storeName).getAll());
+        },
+        async put(storeName, value) {
+          return requestToPromise(this.store(storeName, "readwrite").put(value));
+        },
+        async delete(storeName, key) {
+          return requestToPromise(this.store(storeName, "readwrite").delete(key));
+        },
+        async clear(storeName) {
+          return requestToPromise(this.store(storeName, "readwrite").clear());
+        }
+      };
+
+      const hashText = async (text) => {
+        const bytes = new TextEncoder().encode(text);
+        const digest = await crypto.subtle.digest("SHA-256", bytes);
+        return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+      };
+
+      const now = () => new Date().toISOString();
+
+      const escapeHtml = (value) => String(value || "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[char]));
+
+      const formatDate = (iso) => new Intl.DateTimeFormat(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "2-digit"
+      }).format(new Date(iso));
+
+      const titleWithBars = (title) => {
+        const safe = escapeHtml(title);
+        const parts = safe.split(" ");
+        if (parts.length < 3) return safe + ' <span class="bar"></span>';
+        parts.splice(Math.min(2, parts.length - 1), 0, '<span class="bar"></span>');
+        return parts.join(" ");
+      };
+
+      const normalizeTags = (value) => String(value || "")
+        .split(",")
+        .map((tag) => tag.trim().toLowerCase())
+        .filter(Boolean)
+        .filter((tag, index, list) => list.indexOf(tag) === index);
+
+      const setStatus = (element, message, tone = "") => {
+        element.textContent = message;
+        element.className = "status-line " + tone;
+      };
+
+      const getVisibleFiles = () => {
+        const query = state.search.trim().toLowerCase();
+        const files = state.files.filter((file) => {
+          const haystack = [file.title, file.description, ...(file.tags || [])].join(" ").toLowerCase();
+          const matchesSearch = !query || haystack.includes(query);
+          const matchesTag = !state.tag || (file.tags || []).includes(state.tag);
+          return matchesSearch && matchesTag;
+        });
+        files.sort((a, b) => state.sortNewest
+          ? new Date(b.dateAdded) - new Date(a.dateAdded)
+          : new Date(a.dateAdded) - new Date(b.dateAdded));
+        return files;
+      };
+
+      const renderFiles = () => {
+        const grid = $("fileGrid");
+        const files = getVisibleFiles();
+        if (!files.length) {
+          grid.innerHTML = '<div class="empty-state">No matching files in the local archive.</div>';
+          return;
+        }
+        grid.innerHTML = files.map((file, index) => `
+          <article class="file-card" style="animation-delay:${index * 55}ms" data-level="${escapeHtml(file.redactionLevel || "Classified")}">
+            <div class="file-image">
+              <img src="${escapeHtml(file.imageData)}" alt="${escapeHtml(file.title)}" loading="lazy">
+            </div>
+            <div class="file-body">
+              <div class="meta-row">
+                <span>ZF-${String(file.id).padStart(4, "0")}</span>
+                <span>${escapeHtml(formatDate(file.dateAdded))}</span>
+              </div>
+              <h2 class="redacted-title">${titleWithBars(file.title)}</h2>
+              <p class="description">${escapeHtml(file.description)}</p>
+              <div class="tags">${(file.tags || []).map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
+            </div>
+          </article>
+        `).join("");
+      };
+
+      const renderTags = () => {
+        const select = $("tagFilter");
+        const selected = select.value;
+        const tags = Array.from(new Set(state.files.flatMap((file) => file.tags || []))).sort();
+        select.innerHTML = '<option value="">All tags</option>' + tags.map((tag) => `<option value="${escapeHtml(tag)}">${escapeHtml(tag)}</option>`).join("");
+        select.value = tags.includes(selected) ? selected : "";
+        state.tag = select.value;
+      };
+
+      const renderAdminList = () => {
+        const list = $("adminFileList");
+        if (!state.files.length) {
+          list.innerHTML = '<p class="auth-note">The files store is empty.</p>';
+          return;
+        }
+        const sorted = [...state.files].sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
+        list.innerHTML = sorted.map((file) => `
+          <div class="admin-item">
+            <img src="${escapeHtml(file.imageData)}" alt="">
+            <div>
+              <strong>${escapeHtml(file.title)}</strong>
+              <span>${escapeHtml((file.tags || []).join(", "))}</span>
+            </div>
+            <div class="admin-item-actions">
+              <button type="button" data-edit="${file.id}" title="Edit">E</button>
+              <button type="button" data-delete="${file.id}" title="Delete">D</button>
+            </div>
+          </div>
+        `).join("");
+      };
+
+      const refresh = async () => {
+        state.files = await db.getAll(FILE_STORE);
+        renderTags();
+        renderFiles();
+        renderAdminList();
+      };
+
+      const seedIfNeeded = async () => {
+        const existingSettings = await db.get(SETTINGS_STORE, SETTINGS_ID);
+        const existingFiles = await db.getAll(FILE_STORE);
+        if (!existingSettings) {
+          await db.put(SETTINGS_STORE, {
+            id: SETTINGS_ID,
+            passwordHash: "",
+            recoveryKeyHash: await hashText(DEFAULT_RECOVERY_KEY),
+            adminSessionExpiry: 0,
+            siteTitle: "The Zinco Files",
+            launchDate: now()
+          });
+        }
+        if (!existingFiles.length) {
+          for (const entry of seedFiles) {
+            const timestamp = now();
+            await db.put(FILE_STORE, {
+              ...entry,
+              dateAdded: timestamp,
+              lastModified: timestamp
+            });
+          }
+        }
+        state.settings = await db.get(SETTINGS_STORE, SETTINGS_ID);
+      };
+
+      const saveSettings = async (changes) => {
+        state.settings = { ...state.settings, ...changes };
+        await db.put(SETTINGS_STORE, state.settings);
+      };
+
+      const isSessionActive = () => state.settings && Number(state.settings.adminSessionExpiry || 0) > Date.now();
+
+      const touchSession = async () => {
+        if (!isSessionActive()) return false;
+        await saveSettings({ adminSessionExpiry: Date.now() + SESSION_MS });
+        return true;
+      };
+
+      const openModal = async () => {
+        $("adminModal").classList.add("open");
+        state.settings = await db.get(SETTINGS_STORE, SETTINGS_ID);
+        if (isSessionActive()) {
+          showAdmin();
+        } else {
+          showAuth(state.settings.passwordHash ? "login" : "setup");
+        }
+      };
+
+      const closeModal = () => {
+        $("adminModal").classList.remove("open");
+      };
+
+      const showAuth = (mode) => {
+        state.authMode = mode;
+        $("authView").classList.remove("hidden");
+        $("adminView").classList.add("hidden");
+        $("passwordInput").value = "";
+        $("confirmPasswordInput").value = "";
+        $("recoveryInput").value = "";
+        $("authStatus").textContent = "";
+        $("confirmField").classList.toggle("hidden", mode !== "setup" && mode !== "reset");
+        $("recoveryField").classList.toggle("hidden", mode !== "reset");
+        $("forgotButton").classList.toggle("hidden", mode === "setup");
+        $("loginButton").textContent = mode === "setup" ? "Set password" : mode === "reset" ? "Reset password" : "Authenticate";
+        $("authIntro").textContent = mode === "setup"
+          ? "First launch detected. Set the local administrator password; only its SHA-256 hash will be stored in IndexedDB."
+          : mode === "reset"
+            ? "Enter the one-time recovery key and a new password. The default embedded recovery key is ZINCO-RESET-1977."
+            : "Enter the administrator password. The browser hashes it with SHA-256 before comparison.";
+        $("passwordInput").focus();
+      };
+
+      const showAdmin = async () => {
+        await touchSession();
+        $("authView").classList.add("hidden");
+        $("adminView").classList.remove("hidden");
+        renderAdminList();
+      };
+
+      const requireActiveSession = async () => {
+        state.settings = await db.get(SETTINGS_STORE, SETTINGS_ID);
+        if (!isSessionActive()) {
+          showAuth("login");
+          setStatus($("authStatus"), "Session expired after 30 minutes of inactivity.", "bad");
+          return false;
+        }
+        await touchSession();
+        return true;
+      };
+
+      const handleAuth = async () => {
+        const password = $("passwordInput").value;
+        const confirm = $("confirmPasswordInput").value;
+        const recovery = $("recoveryInput").value;
+        if (!password || password.length < 8) {
+          setStatus($("authStatus"), "Use a password of at least 8 characters.", "bad");
+          return;
+        }
+        if ((state.authMode === "setup" || state.authMode === "reset") && password !== confirm) {
+          setStatus($("authStatus"), "Password confirmation does not match.", "bad");
+          return;
+        }
+        const passwordHash = await hashText(password);
+        if (state.authMode === "setup") {
+          await saveSettings({ passwordHash, adminSessionExpiry: Date.now() + SESSION_MS });
+          setStatus($("authStatus"), "Password set. Session opened.", "good");
+          showAdmin();
+          return;
+        }
+        if (state.authMode === "reset") {
+          const recoveryHash = await hashText(recovery);
+          if (recoveryHash !== state.settings.recoveryKeyHash) {
+            setStatus($("authStatus"), "Recovery key rejected.", "bad");
+            return;
+          }
+          await saveSettings({
+            passwordHash,
+            recoveryKeyHash: await hashText(DEFAULT_RECOVERY_KEY + ":" + Date.now()),
+            adminSessionExpiry: Date.now() + SESSION_MS
+          });
+          setStatus($("authStatus"), "Password reset. Recovery key has been burned.", "good");
+          showAdmin();
+          return;
+        }
+        if (passwordHash !== state.settings.passwordHash) {
+          setStatus($("authStatus"), "Authentication failed.", "bad");
+          return;
+        }
+        await saveSettings({ adminSessionExpiry: Date.now() + SESSION_MS });
+        showAdmin();
+      };
+
+      const resetForm = () => {
+        state.editingId = null;
+        state.imageData = "";
+        state.imageType = "url";
+        $("formTitle").textContent = "Add file entry";
+        $("fileForm").reset();
+        $("entryLevel").value = "Low redaction";
+        $("imagePreview").innerHTML = "Image preview";
+        $("adminStatus").textContent = "";
+      };
+
+      const updatePreview = (src) => {
+        $("imagePreview").innerHTML = src
+          ? `<img src="${escapeHtml(src)}" alt="Selected preview">`
+          : "Image preview";
+      };
+
+      const readUpload = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+
+      const submitForm = async (event) => {
+        event.preventDefault();
+        if (!await requireActiveSession()) return;
+        const url = $("entryImageUrl").value.trim();
+        const imageData = state.imageData || url;
+        if (!imageData) {
+          setStatus($("adminStatus"), "Add an image URL or upload an image.", "bad");
+          return;
+        }
+        const title = $("entryTitle").value.trim();
+        const description = $("entryDescription").value.trim();
+        if (!title || !description) {
+          setStatus($("adminStatus"), "Title and description are required.", "bad");
+          return;
+        }
+        const timestamp = now();
+        const existing = state.editingId ? await db.get(FILE_STORE, state.editingId) : null;
+        const record = {
+          title,
+          description,
+          tags: normalizeTags($("entryTags").value),
+          imageData,
+          imageType: state.imageType || (imageData.startsWith("data:") ? "data-url" : "url"),
+          dateAdded: existing ? existing.dateAdded : timestamp,
+          lastModified: timestamp,
+          redactionLevel: $("entryLevel").value
+        };
+        if (state.editingId) record.id = state.editingId;
+        await db.put(FILE_STORE, record);
+        setStatus($("adminStatus"), state.editingId ? "Entry updated." : "Entry added.", "good");
+        resetForm();
+        await refresh();
+      };
+
+      const editEntry = async (id) => {
+        if (!await requireActiveSession()) return;
+        const file = await db.get(FILE_STORE, Number(id));
+        if (!file) return;
+        state.editingId = file.id;
+        state.imageData = file.imageData;
+        state.imageType = file.imageType;
+        $("formTitle").textContent = "Edit file entry";
+        $("entryTitle").value = file.title || "";
+        $("entryDescription").value = file.description || "";
+        $("entryTags").value = (file.tags || []).join(", ");
+        $("entryImageUrl").value = file.imageType === "url" ? file.imageData : "";
+        $("entryLevel").value = file.redactionLevel || "Low redaction";
+        updatePreview(file.imageData);
+      };
+
+      const deleteEntry = async (id) => {
+        if (!await requireActiveSession()) return;
+        if (!confirm("Delete this file entry from the local IndexedDB store?")) return;
+        await db.delete(FILE_STORE, Number(id));
+        resetForm();
+        await refresh();
+      };
+
+      const exportFiles = async () => {
+        if (!await requireActiveSession()) return;
+        const payload = {
+          exportedAt: now(),
+          app: "The Zinco Files",
+          files: await db.getAll(FILE_STORE)
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "the-zinco-files-backup.json";
+        link.click();
+        URL.revokeObjectURL(url);
+      };
+
+      const importFiles = async (file) => {
+        if (!file || !await requireActiveSession()) return;
+        const text = await file.text();
+        const payload = JSON.parse(text);
+        const files = Array.isArray(payload) ? payload : payload.files;
+        if (!Array.isArray(files)) throw new Error("Backup JSON must contain a files array.");
+        for (const item of files) {
+          const timestamp = now();
+          const clean = {
+            title: String(item.title || "Untitled file"),
+            description: String(item.description || ""),
+            tags: Array.isArray(item.tags) ? item.tags.map(String) : normalizeTags(item.tags),
+            imageData: String(item.imageData || ""),
+            imageType: String(item.imageType || "url"),
+            dateAdded: item.dateAdded || timestamp,
+            lastModified: timestamp,
+            redactionLevel: String(item.redactionLevel || "Partial redaction")
+          };
+          if (clean.imageData) await db.put(FILE_STORE, clean);
+        }
+        await refresh();
+        setStatus($("adminStatus"), "Import complete.", "good");
+      };
+
+      const bindEvents = () => {
+        $("lockTrigger").addEventListener("click", openModal);
+        $("closeModal").addEventListener("click", closeModal);
+        $("adminModal").addEventListener("click", (event) => {
+          if (event.target === $("adminModal")) closeModal();
+        });
+        document.addEventListener("keydown", (event) => {
+          const combo = event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "z";
+          if (combo) openModal();
+          if (event.key === "Escape" && $("adminModal").classList.contains("open")) closeModal();
+        });
+        $("loginButton").addEventListener("click", handleAuth);
+        $("forgotButton").addEventListener("click", () => showAuth("reset"));
+        $("passwordInput").addEventListener("keydown", (event) => {
+          if (event.key === "Enter") handleAuth();
+        });
+        $("searchInput").addEventListener("input", (event) => {
+          state.search = event.target.value;
+          renderFiles();
+        });
+        $("tagFilter").addEventListener("change", (event) => {
+          state.tag = event.target.value;
+          renderFiles();
+        });
+        $("sortToggle").addEventListener("click", () => {
+          state.sortNewest = !state.sortNewest;
+          $("sortToggle").textContent = state.sortNewest ? "Newest first" : "Oldest first";
+          renderFiles();
+        });
+        $("entryImageUrl").addEventListener("input", (event) => {
+          state.imageData = event.target.value.trim();
+          state.imageType = "url";
+          updatePreview(state.imageData);
+        });
+        $("entryUpload").addEventListener("change", async (event) => {
+          const file = event.target.files[0];
+          if (!file) return;
+          state.imageData = await readUpload(file);
+          state.imageType = file.type || "data-url";
+          $("entryImageUrl").value = "";
+          updatePreview(state.imageData);
+        });
+        $("fileForm").addEventListener("submit", submitForm);
+        $("resetForm").addEventListener("click", resetForm);
+        $("adminFileList").addEventListener("click", (event) => {
+          const editId = event.target.getAttribute("data-edit");
+          const deleteId = event.target.getAttribute("data-delete");
+          if (editId) editEntry(editId);
+          if (deleteId) deleteEntry(deleteId);
+        });
+        $("exportButton").addEventListener("click", exportFiles);
+        $("importButton").addEventListener("click", () => $("importInput").click());
+        $("importInput").addEventListener("change", async (event) => {
+          try {
+            await importFiles(event.target.files[0]);
+          } catch (error) {
+            setStatus($("adminStatus"), error.message, "bad");
+          } finally {
+            event.target.value = "";
+          }
+        });
+        $("logoutButton").addEventListener("click", async () => {
+          await saveSettings({ adminSessionExpiry: 0 });
+          showAuth("login");
+        });
+        ["click", "keydown", "pointermove"].forEach((type) => {
+          document.addEventListener(type, () => {
+            if ($("adminModal").classList.contains("open") && !$("adminView").classList.contains("hidden")) {
+              touchSession();
+            }
+          }, { passive: true });
+        });
+      };
+
+      const boot = async () => {
+        if (!window.indexedDB || !window.crypto || !window.crypto.subtle) {
+          $("fileGrid").innerHTML = '<div class="empty-state">This browser does not support IndexedDB and Web Crypto SubtleCrypto.</div>';
+          return;
+        }
+        await db.init();
+        await seedIfNeeded();
+        $("siteTitle").textContent = state.settings.siteTitle || "The Zinco Files";
+        bindEvents();
+        await refresh();
+      };
+
+      boot().catch((error) => {
+        console.error(error);
+        $("fileGrid").innerHTML = '<div class="empty-state">Archive failed to initialize. Check the browser console for details.</div>';
+      });
+    })();
+  </script>
+</body>
+</html>
